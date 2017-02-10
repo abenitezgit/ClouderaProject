@@ -11,7 +11,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
+import org.json.JSONObject;
 
 import ecc.cloudera.dataAccess.ClouderaHB;
 import ecc.cloudera.model.DataRequest;
@@ -71,7 +74,54 @@ public class Grabaciones {
     	return respuesta;
     }
 
-	
+    
+    @GET
+    @Path("get")
+	public String grabacionesGet(
+						@QueryParam("fechaDesde") String fechaDesde,
+						@QueryParam("fechaHasta") String fechaHasta,
+						@QueryParam("skill") String skill,
+						@QueryParam("limit") int limit) {
+    	
+    	try {
+	    	//Arma el string de entrada como lo recibe el POST
+	    	JSONObject jo = new JSONObject();
+	    	jo.put("fechaDesde", fechaDesde);
+	    	jo.put("fechaHasta", fechaHasta);
+	    	jo.put("skill", skill);
+	    	jo.put("tableName", "grabaciones");
+	    	jo.put("limit", limit);
+	    	
+			System.out.println("Inicio GET");
+			System.out.println("Datos de entrada: "+jo.toString());
+			
+			//Genera consulta de grabaciones con los parametros recibidos 
+			//desde dataInput en formato String(JSON)
+			
+			GetGrabaciones getGrab = new GetGrabaciones();
+			getGrab.getGrabaciones(jo.toString());
+			
+			if (getGrab.getCodeResponse()==0) {
+				if (getGrab.getMapGrabacion().size()>0) {
+					String stringMap = mylib.serializeObjectToJSon(getGrab.getMapGrabacion(), false);
+				
+					//return Response.status(200).entity(stringMap).build();
+					return stringMap;
+				} else {
+					//return Response.status(200).entity("No hay grabaciones").build();
+					return "No hay grabaciones para los datos entrada";
+				}
+			} else {
+				//return Response.status(401).entity(getGrab.getMessageResponse()).build();
+				return "Error en transaccion, codError: "+getGrab.getCodeResponse();
+			}
+    	} catch (Exception e) {
+    		System.out.println("Se ha producido un error no controlado: "+e.getMessage());
+    		return "Se ha producido un error no controlado: "+e.getMessage();
+    	}
+    }
+    
+    
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	public String grabaciones(String dataInput) {
